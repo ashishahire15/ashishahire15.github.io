@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CTF Challenge | Ashish Ahire</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #080c10;
+      --surface: #0d1117;
+      --surface2: #111820;
+      --border: #1e2d3d;
+      --accent: #00e5ff;
+      --accent2: #00ff9d;
+      --accent3: #ff4b6e;
+      --text: #c9d1d9;
+      --text-dim: #6e7f8d;
+      --heading: #e6edf3;
+      --mono: 'Share Tech Mono', monospace;
+      --sans: 'Syne', sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Animated grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Scanline effect */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.05) 2px,
+        rgba(0,0,0,0.05) 4px
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 0 24px 60px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* NAV */
+    nav {
+      padding: 20px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 48px;
+    }
+
+    nav a {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-dim);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    nav a:hover { color: var(--accent); }
+
+    nav .nav-brand {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--accent);
+      letter-spacing: 2px;
+    }
+
+    /* HEADER */
+    .page-header {
+      text-align: center;
+      margin-bottom: 48px;
+      animation: fadeUp 0.6s ease forwards;
+    }
+
+    .ctf-label {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 11px;
+      background: var(--accent3);
+      color: var(--bg);
+      padding: 3px 14px;
+      border-radius: 2px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: clamp(32px, 6vw, 52px);
+      font-weight: 800;
+      color: var(--heading);
+      letter-spacing: -1px;
+      margin-bottom: 12px;
+      line-height: 1.1;
+    }
+
+    h1 span { color: var(--accent); }
+
+    .page-desc {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.7;
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    /* TERMINAL INTRO */
+    .terminal {
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 20px 24px;
+      margin-bottom: 32px;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 2;
+      animation: fadeUp 0.6s ease forwards 0.2s;
+      opacity: 0;
+    }
+
+    .terminal-bar {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+    }
+
+    .dot-red { background: #ff5f56; }
+    .dot-yellow { background: #ffbd2e; }
+    .dot-green { background: #27c93f; }
+
+    .t-prompt { color: var(--accent2); }
+    .t-cmd { color: var(--text); }
+    .t-out { color: var(--text-dim); }
+    .t-warn { color: var(--accent3); }
+    .t-flag { color: var(--accent); }
+
+    /* CHALLENGE CARD */
+    .challenge-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 24px;
+      animation: fadeUp 0.6s ease forwards 0.3s;
+      opacity: 0;
+    }
+
+    .card-header {
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-title {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--accent);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .card-badge {
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 2px 10px;
+      border-radius: 2px;
+      letter-spacing: 1px;
+    }
+
+    .badge-easy { background: rgba(0,255,157,0.1); color: var(--accent2); border: 1px solid rgba(0,255,157,0.3); }
+    .badge-medium { background: rgba(0,229,255,0.1); color: var(--accent); border: 1px solid rgba(0,229,255,0.3); }
+
+    .card-body { padding: 22px; }
+
+    .cipher-display {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--accent3);
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 16px;
+      word-break: break-all;
+      margin-bottom: 8px;
+      user-select: all;
+      cursor: text;
+      line-height: 1.6;
+    }
+
+    .cipher-hint {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-bottom: 20px;
+    }
+
+    /* STEPS */
+    .step-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .step {
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 18px;
+      background: var(--surface2);
+      transition: border-color 0.2s;
+    }
+
+    .step.active { border-color: var(--accent); }
+
+    .step-num {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--accent3);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .step-title {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--heading);
+      margin-bottom: 14px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      min-width: 180px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 9px 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus { border-color: var(--accent); }
+
+    .btn {
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 9px 18px;
+      border-radius: 3px;
+      cursor: pointer;
+      letter-spacing: 1px;
+      white-space: nowrap;
+      transition: all 0.2s;
+      border: 1px solid var(--accent);
+      background: transparent;
+      color: var(--accent);
+    }
+
+    .btn:hover { background: var(--accent); color: var(--bg); }
+    .btn-secondary { border-color: var(--accent2); color: var(--accent2); }
+    .btn-secondary:hover { background: var(--accent2); color: var(--bg); }
+
+    .step-output {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--accent2);
+      min-height: 20px;
+      word-break: break-all;
+      line-height: 1.6;
+    }
+
+    .step-output.error { color: var(--accent3); }
+
+    .step-divider {
+      text-align: center;
+      padding: 10px 0;
+      font-family: var(--mono);
+      font-size: 18px;
+      color: var(--accent);
+    }
+
+    /* FLAG */
+    .flag-box {
+      display: none;
+      margin-top: 24px;
+      background: rgba(0,255,157,0.05);
+      border: 1px solid var(--accent2);
+      border-radius: 6px;
+      padding: 22px;
+      animation: fadeUp 0.5s ease forwards;
+    }
+
+    .flag-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .flag-icon { font-size: 28px; }
+
+    .flag-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--accent2);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    .flag-value {
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--heading);
+      word-break: break-all;
+    }
+
+    .flag-congrats {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-top: 10px;
+      line-height: 1.6;
+    }
+
+    /* SCOREBOARD */
+    .score-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 22px;
+      margin-bottom: 24px;
+      animation: fadeUp 0.6s ease forwards 0.4s;
+      opacity: 0;
+    }
+
+    .score-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .score-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, var(--border), transparent);
+    }
+
+    .score-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .score-row:last-child { border-bottom: none; }
+    .score-pts { color: var(--accent2); font-weight: 700; }
+    .score-name { color: var(--text); }
+    .score-time { color: var(--text-dim); font-size: 11px; }
+
+    /* TOOLS */
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+      animation: fadeUp 0.6s ease forwards 0.5s;
+      opacity: 0;
+    }
+
+    .tool-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 14px 16px;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .tool-name {
+      color: var(--accent);
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+
+    .tool-desc { color: var(--text-dim); font-size: 11px; line-height: 1.5; }
+
+    /* SPOILER */
+    details {
+      margin-top: 20px;
+      font-family: var(--mono);
+      font-size: 12px;
+      animation: fadeUp 0.6s ease forwards 0.6s;
+      opacity: 0;
+    }
+
+    summary {
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 8px 0;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: color 0.2s;
+    }
+
+    summary:hover { color: var(--accent3); }
+    summary::before { content: '▶'; font-size: 10px; }
+    details[open] summary::before { content: '▼'; }
+
+    .spoiler-inner {
+      margin-top: 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 16px;
+      color: var(--accent3);
+      line-height: 2;
+      word-break: break-all;
+    }
+
+    .spoiler-inner strong { color: var(--text-dim); }
+
+    /* FOOTER */
+    footer {
+      text-align: center;
+      padding: 32px 0 0;
+      border-top: 1px solid var(--border);
+      margin-top: 40px;
+    }
+
+    footer p {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    footer a { color: var(--accent); text-decoration: none; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 8px;
+      height: 14px;
+      background: var(--accent);
+      vertical-align: middle;
+      animation: blink 1s infinite;
+      margin-left: 2px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- NAV -->
+  <nav>
+    <span class="nav-brand">ASHISH_AHIRE</span>
+    <a href="index.html">← Back to Resume</a>
+  </nav>
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="ctf-label">CTF CHALLENGE</div>
+    <h1>Crack the <span>Code</span></h1>
+    <p class="page-desc">A message has been hidden behind two layers of encryption. Can you decode it and find the flag? Prove your analyst skills. 🔐</p>
+  </div>
+
+  <!-- TERMINAL INTRO -->
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="dot dot-red"></div>
+      <div class="dot dot-yellow"></div>
+      <div class="dot dot-green"></div>
+    </div>
+    <div><span class="t-prompt">analyst@ashishahire:~$</span> <span class="t-cmd">cat intercepted_message.txt</span></div>
+    <div><span class="t-out">[+] Encrypted payload detected</span></div>
+    <div><span class="t-out">[+] Encryption layers: 2</span></div>
+    <div><span class="t-warn">[!] Layer 1: Unknown cipher</span></div>
+    <div><span class="t-warn">[!] Layer 2: Encoding detected</span></div>
+    <div><span class="t-flag">[*] Decode to reveal the flag...</span></div>
+    <div><span class="t-prompt">analyst@ashishahire:~$</span> <span class="cursor"></span></div>
+  </div>
+
+  <!-- CHALLENGE -->
+  <div class="challenge-card">
+    <div class="card-header">
+      <span class="card-title">// intercepted_message.txt</span>
+      <span class="card-badge badge-medium">MEDIUM</span>
+    </div>
+    <div class="card-body">
+
+      <div class="cipher-display" id="ciphertext">((h`xv+G5(d&lt;xw#@+$q&gt;3vu?x$qw4&gt;'95rqb3byC{rq93&gt;uD6)}_{:q$+(u;2rqG5)"exvuK2v=K2vu@2)y=|%'p+a`92(HF*ahE</div>
+      <div class="cipher-hint">💡 Click the ciphertext to select it · Two decryption steps required</div>
+
+      <div class="step-wrap">
+
+        <!-- STEP 1 -->
+        <div class="step" id="step1">
+          <div class="step-num">Step 01</div>
+          <div class="step-title">Apply ROT47 Decryption</div>
+          <div class="input-row">
+            <input type="text" id="rot47-input" placeholder="Paste the ciphertext here…"/>
+            <button class="btn" onclick="applyROT47()">Run ROT47 →</button>
+          </div>
+          <div class="step-output" id="rot47-output"></div>
+        </div>
+
+        <div class="step-divider">↓</div>
+
+        <!-- STEP 2 -->
+        <div class="step" id="step2">
+          <div class="step-num">Step 02</div>
+          <div class="step-title">Decode Base64</div>
+          <div class="input-row">
+            <input type="text" id="b64-input" placeholder="Paste the ROT47 output here…"/>
+            <button class="btn btn-secondary" onclick="applyBase64()">Decode Base64 →</button>
+          </div>
+          <div class="step-output" id="b64-output"></div>
+        </div>
+
+      </div>
+
+      <!-- FLAG -->
+      <div class="flag-box" id="flag-box">
+        <div class="flag-top">
+          <span class="flag-icon">🚩</span>
+          <div>
+            <div class="flag-label">Flag Captured</div>
+            <div class="flag-value" id="flag-text"></div>
+          </div>
+        </div>
+        <div class="flag-congrats">🎉 Nice work, analyst! You successfully peeled both encryption layers. Feel free to reach out — you've already proven you pay attention to detail.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SCOREBOARD (mock) -->
+  <div class="score-box">
+    <div class="score-label">Leaderboard</div>
+    <div class="score-row">
+      <span class="score-name">🥇 analyst_x</span>
+      <span class="score-time">2 min 14s</span>
+      <span class="score-pts">100 pts</span>
+    </div>
+    <div class="score-row">
+      <span class="score-name">🥈 h4ck3r_pro</span>
+      <span class="score-time">4 min 02s</span>
+      <span class="score-pts">100 pts</span>
+    </div>
+    <div class="score-row">
+      <span class="score-name">🥉 sec_ninja</span>
+      <span class="score-time">6 min 55s</span>
+      <span class="score-pts">100 pts</span>
+    </div>
+    <div class="score-row" style="color:var(--accent);font-style:italic;">
+      <span class="score-name">← Your name here?</span>
+      <span class="score-time">—</span>
+      <span class="score-pts">— pts</span>
+    </div>
+  </div>
+
+  <!-- TOOLS REFERENCE -->
+  <div class="tools-grid">
+    <div class="tool-card">
+      <div class="tool-name">ROT47</div>
+      <div class="tool-desc">Shifts printable ASCII characters (33–126) by 47 positions. A symmetric cipher — applying it twice returns the original.</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name">Base64</div>
+      <div class="tool-desc">Encodes binary data using 64 printable characters. Commonly used to encode data in transit or storage.</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name">CyberChef</div>
+      <div class="tool-desc">Browser-based tool for encoding, decoding, and transforming data. Useful for chaining operations.<br><a href="https://gchq.github.io/CyberChef" target="_blank" style="color:var(--accent);">→ Open CyberChef</a></div>
+    </div>
+  </div>
+
+  <!-- SPOILER -->
+  <details>
+    <summary>I give up — show me the answer</summary>
+    <div class="spoiler-inner">
+      <strong>ROT47 output:</strong><br>
+      WW91IGZvdW5kIHRoZSBmbGFnISBHcmVhdCB3b3JrLCBhbmFseXN0LiBSZWFjaCBvdXQ6IGFzaGlzaGFoaXJlMTVAZ21haWwuY29t<br><br>
+      <strong>Base64 decoded (flag):</strong><br>
+      You found the flag! Great work, analyst. Reach out: ashishahire15@gmail.com
+    </div>
+  </details>
+
+  <footer>
+    <p>← <a href="index.html">Back to Resume</a> &nbsp;·&nbsp; Built by <a href="https://github.com/ashishahire15" target="_blank">@ashishahire15</a></p>
+  </footer>
+
+</div>
+
+<script>
+  function rot47(s) {
+    return s.split('').map(c => {
+      const o = c.charCodeAt(0);
+      return (o >= 33 && o <= 126) ? String.fromCharCode(33 + (o - 33 + 47) % 94) : c;
+    }).join('');
+  }
+
+  function applyROT47() {
+    const input = document.getElementById('rot47-input').value.trim();
+    if (!input) return;
+    const result = rot47(input);
+    const out = document.getElementById('rot47-output');
+    out.className = 'step-output';
+    out.textContent = '→ ' + result;
+    document.getElementById('b64-input').value = result;
+    document.getElementById('step1').style.borderColor = 'var(--accent2)';
+    document.getElementById('step2').style.borderColor = 'var(--accent)';
+  }
+
+  function applyBase64() {
+    const input = document.getElementById('b64-input').value.trim();
+    if (!input) return;
+    const out = document.getElementById('b64-output');
+    try {
+      const decoded = atob(input);
+      out.className = 'step-output';
+      out.textContent = '→ ' + decoded;
+      const secret = 'You found the flag! Great work, analyst. Reach out: ashishahire15@gmail.com';
+      if (decoded === secret) {
+        document.getElementById('flag-text').textContent = decoded;
+        const box = document.getElementById('flag-box');
+        box.style.display = 'block';
+        document.getElementById('step2').style.borderColor = 'var(--accent2)';
+        box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    } catch(e) {
+      out.className = 'step-output error';
+      out.textContent = '✗ Invalid Base64 — double-check your ROT47 output';
+    }
+  }
+</script>
+
+</body>
+</html>
